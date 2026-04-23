@@ -1,1000 +1,673 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>기준일 법령 조문 조회</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0e0f14;
-      --surface: #161820;
-      --surface2: #1e2030;
-      --border: #2a2d3e;
-      --border2: #363950;
-      --text: #cdd6f4;
-      --text-dim: #6c7086;
-      --text-sub: #9399b2;
-      --accent: #89b4fa;
-      --accent2: #cba6f7;
-      --green: #a6e3a1;
-      --yellow: #f9e2af;
-      --red: #f38ba8;
-      --teal: #94e2d5;
-      --peach: #fab387;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Noto Sans KR', sans-serif;
-      min-height: 100vh;
-      line-height: 1.6;
-    }
-
-    /* ── Header ── */
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      height: 60px;
-      background: var(--surface);
-    }
-    header .logo {
-      font-family: 'Noto Serif KR', serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-    }
-    header .logo span { color: var(--text-sub); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem; }
-    header .tag {
-      margin-left: auto;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      font-family: 'JetBrains Mono', monospace;
-      border: 1px solid var(--border2);
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-
-    /* ── Layout ── */
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-      display: grid;
-      gap: 1.5rem;
-    }
-
-    /* ── Cards ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-    }
-    .card-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-dim);
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .card-title::before {
-      content: '';
-      display: inline-block;
-      width: 3px;
-      height: 14px;
-      background: var(--accent);
-      border-radius: 2px;
-    }
-
-    /* ── API Key section ── */
-    .api-notice {
-      background: color-mix(in srgb, var(--accent) 8%, transparent);
-      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-      border-radius: 8px;
-      padding: 1rem 1.2rem;
-      font-size: 0.85rem;
-      color: var(--text-sub);
-      line-height: 1.7;
-    }
-    .api-notice a { color: var(--accent); text-decoration: none; }
-    .api-notice a:hover { text-decoration: underline; }
-    .api-notice strong { color: var(--text); }
-
-    /* ── Form ── */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
-
-    .field { display: flex; flex-direction: column; gap: 0.4rem; }
-    .field.full { grid-column: 1 / -1; }
-
-    label {
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text-sub);
-      letter-spacing: 0.03em;
-    }
-
-    input[type="text"], input[type="date"] {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 0.65rem 0.9rem;
-      color: var(--text);
-      font-family: 'Noto Sans KR', sans-serif;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      width: 100%;
-    }
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
-    }
-    input::placeholder { color: var(--text-dim); }
-
-    .input-hint {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-    }
-
-    /* ── Buttons ── */
-    .btn-row {
-      display: flex;
-      gap: 0.8rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
-    }
-    button {
-      padding: 0.65rem 1.4rem;
-      border-radius: 8px;
-      border: none;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .btn-primary {
-      background: var(--accent);
-      color: #0e0f14;
-    }
-    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text-sub);
-      border: 1px solid var(--border2);
-    }
-    .btn-secondary:hover { border-color: var(--text-sub); color: var(--text); }
-
-    /* ── Search results dropdown ── */
-    .search-wrapper { position: relative; }
-    .dropdown {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0; right: 0;
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      z-index: 100;
-      max-height: 240px;
-      overflow-y: auto;
-      display: none;
-    }
-    .dropdown.open { display: block; }
-    .dropdown-item {
-      padding: 0.6rem 0.9rem;
-      cursor: pointer;
-      font-size: 0.88rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-    .dropdown-item .law-name { color: var(--text); }
-    .dropdown-item .law-meta { font-size: 0.72rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
-
-    /* ── Status / Progress ── */
-    .status-bar {
-      display: none;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.8rem 1rem;
-      background: var(--surface2);
-      border-radius: 8px;
-      font-size: 0.83rem;
-      color: var(--text-sub);
-    }
-    .status-bar.active { display: flex; }
-    .spinner {
-      width: 16px; height: 16px;
-      border: 2px solid var(--border2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .step-list { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.2rem; }
-    .step {
-      font-size: 0.78rem;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .step.done { color: var(--green); }
-    .step.doing { color: var(--accent); }
-    .step.error { color: var(--red); }
-    .step-icon { width: 14px; text-align: center; }
-
-    /* ── Result ── */
-    #result { display: none; }
-
-    .result-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.2rem;
-    }
-    .result-title {
-      font-family: 'Noto Serif KR', serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .result-meta {
-      display: flex;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-      margin-top: 0.4rem;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 10px;
-      border-radius: 100px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 500;
-    }
-    .badge-blue { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
-    .badge-green { background: color-mix(in srgb, var(--green) 15%, transparent); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 30%, transparent); }
-    .badge-yellow { background: color-mix(in srgb, var(--yellow) 15%, transparent); color: var(--yellow); border: 1px solid color-mix(in srgb, var(--yellow) 30%, transparent); }
-    .badge-red { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); }
-    .badge-teal { background: color-mix(in srgb, var(--teal) 15%, transparent); color: var(--teal); border: 1px solid color-mix(in srgb, var(--teal) 30%, transparent); }
-    .badge-peach { background: color-mix(in srgb, var(--peach) 15%, transparent); color: var(--peach); border: 1px solid color-mix(in srgb, var(--peach) 30%, transparent); }
-
-    /* ── Article rendering ── */
-    .article-section { margin-bottom: 2rem; }
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-dim);
-      margin-bottom: 0.8rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .article {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 0.6rem;
-      overflow: hidden;
-      transition: border-color 0.15s;
-    }
-    .article:hover { border-color: var(--border2); }
-    .article-header {
-      padding: 0.7rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      cursor: pointer;
-      user-select: none;
-    }
-    .article-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--accent);
-      font-weight: 500;
-      min-width: 80px;
-    }
-    .article-title-text {
-      font-size: 0.9rem;
-      color: var(--text);
-      flex: 1;
-    }
-    .article-chevron {
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      transition: transform 0.2s;
-    }
-    .article.open .article-chevron { transform: rotate(180deg); }
-    .article-body {
-      display: none;
-      padding: 0.8rem 1rem 1rem 1rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.875rem;
-      line-height: 1.9;
-      color: var(--text-sub);
-      white-space: pre-wrap;
-      word-break: keep-all;
-    }
-    .article.open .article-body { display: block; }
-
-    /* ── Addenda (부칙) ── */
-    .addendum {
-      background: color-mix(in srgb, var(--accent2) 5%, var(--surface2));
-      border: 1px solid color-mix(in srgb, var(--accent2) 20%, var(--border));
-      border-radius: 8px;
-      margin-bottom: 0.6rem;
-      overflow: hidden;
-    }
-    .addendum .article-num { color: var(--accent2); }
-
-    /* ── Error ── */
-    .error-box {
-      background: color-mix(in srgb, var(--red) 8%, transparent);
-      border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
-      border-radius: 8px;
-      padding: 1rem 1.2rem;
-      color: var(--red);
-      font-size: 0.875rem;
-      display: none;
-    }
-    .error-box.active { display: block; }
-
-    /* ── Info box ── */
-    .info-box {
-      background: color-mix(in srgb, var(--teal) 7%, transparent);
-      border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
-      border-radius: 8px;
-      padding: 0.8rem 1rem;
-      font-size: 0.82rem;
-      color: var(--teal);
-      line-height: 1.6;
-    }
-
-    /* ── Link to law ── */
-    .law-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.8rem;
-      color: var(--accent);
-      text-decoration: none;
-      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-      border-radius: 6px;
-      padding: 4px 10px;
-    }
-    .law-link:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-
-    /* ── scrollbar ── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>기준일 법령 조문 조회</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0e0f14;--s:#161820;--s2:#1e2030;--bd:#2a2d3e;--bd2:#363950;--tx:#cdd6f4;--dim:#6c7086;--sub:#9399b2;--ac:#89b4fa;--ac2:#cba6f7;--gr:#a6e3a1;--ye:#f9e2af;--re:#f38ba8;--te:#94e2d5;--pe:#fab387;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:'Noto Sans KR',sans-serif;min-height:100vh;line-height:1.6;}
+header{border-bottom:1px solid var(--bd);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;background:var(--s);}
+.logo{font-family:'Noto Serif KR',serif;font-size:1.1rem;font-weight:700;color:var(--ac);}
+.logo span{color:var(--sub);font-weight:400;font-size:.82rem;margin-left:.5rem;}
+.tag{margin-left:auto;font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;border:1px solid var(--bd2);padding:2px 8px;border-radius:4px;}
+.container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:grid;gap:1.5rem;}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:12px;padding:1.5rem;}
+.ct{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;}
+.ct::before{content:'';display:inline-block;width:3px;height:14px;background:var(--ac);border-radius:2px;}
+.notice{background:color-mix(in srgb,var(--ac) 8%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);border-radius:8px;padding:1rem 1.2rem;font-size:.85rem;color:var(--sub);line-height:1.7;}
+.notice a{color:var(--ac);text-decoration:none;}
+.notice strong{color:var(--tx);}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:640px){.fg{grid-template-columns:1fr;}}
+.fi{display:flex;flex-direction:column;gap:.4rem;}
+.fi.full{grid-column:1/-1;}
+label{font-size:.78rem;font-weight:500;color:var(--sub);}
+input[type=text],input[type=date]{background:var(--s2);border:1px solid var(--bd2);border-radius:8px;padding:.65rem .9rem;color:var(--tx);font-family:'Noto Sans KR',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
+input:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 15%,transparent);}
+input::placeholder{color:var(--dim);}
+.hint{font-size:.72rem;color:var(--dim);}
+.btnr{display:flex;gap:.8rem;margin-top:.5rem;flex-wrap:wrap;}
+button{padding:.65rem 1.4rem;border-radius:8px;border:none;font-family:'Noto Sans KR',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.4rem;}
+.bp{background:var(--ac);color:#0e0f14;}
+.bp:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.bp:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.bs{background:var(--s2);color:var(--sub);border:1px solid var(--bd2);}
+.bs:hover{border-color:var(--sub);color:var(--tx);}
+.sw{position:relative;}
+.sw .sp{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;}
+.dd{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--s2);border:1px solid var(--bd2);border-radius:8px;z-index:200;max-height:260px;overflow-y:auto;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.dd.open{display:block;}
+.di{padding:.65rem 1rem;cursor:pointer;font-size:.875rem;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;gap:.5rem;}
+.di:last-child{border-bottom:none;}
+.di:hover,.di.hl{background:color-mix(in srgb,var(--ac) 12%,transparent);}
+.dn{color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dm{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;flex-shrink:0;}
+.de{padding:.8rem 1rem;font-size:.85rem;color:var(--dim);text-align:center;}
+.sb{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;background:var(--s2);border-radius:8px;font-size:.83rem;color:var(--sub);}
+.sp{width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.sl{display:flex;flex-direction:column;gap:.3rem;margin-top:.8rem;}
+.st{font-size:.78rem;color:var(--dim);display:flex;align-items:flex-start;gap:.5rem;font-family:'JetBrains Mono',monospace;line-height:1.5;}
+.st.done{color:var(--gr);}
+.st.doing{color:var(--ac);}
+.st.fail{color:var(--re);}
+.si{width:14px;text-align:center;flex-shrink:0;margin-top:1px;}
+.eb{background:color-mix(in srgb,var(--re) 8%,transparent);border:1px solid color-mix(in srgb,var(--re) 30%,transparent);border-radius:8px;padding:1rem 1.2rem;color:var(--re);font-size:.875rem;display:none;white-space:pre-line;line-height:1.8;}
+.eb.on{display:block;}
+.bx{font-size:.72rem;padding:2px 10px;border-radius:100px;font-family:'JetBrains Mono',monospace;font-weight:500;}
+.bb{background:color-mix(in srgb,var(--ac) 15%,transparent);color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);}
+.bg{background:color-mix(in srgb,var(--gr) 15%,transparent);color:var(--gr);border:1px solid color-mix(in srgb,var(--gr) 30%,transparent);}
+.by{background:color-mix(in srgb,var(--ye) 15%,transparent);color:var(--ye);border:1px solid color-mix(in srgb,var(--ye) 30%,transparent);}
+.bt{background:color-mix(in srgb,var(--te) 15%,transparent);color:var(--te);border:1px solid color-mix(in srgb,var(--te) 30%,transparent);}
+.bpp{background:color-mix(in srgb,var(--pe) 15%,transparent);color:var(--pe);border:1px solid color-mix(in srgb,var(--pe) 30%,transparent);}
+#result{display:none;}
+.rh{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem;}
+.rt{font-family:'Noto Serif KR',serif;font-size:1.4rem;font-weight:700;color:var(--tx);}
+.rm{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem;}
+.ll{display:inline-flex;align-items:center;gap:.35rem;font-size:.8rem;color:var(--ac);text-decoration:none;border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);border-radius:6px;padding:4px 10px;white-space:nowrap;}
+.ll:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);}
+.sl2{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid var(--bd);}
+.as{margin-bottom:2rem;}
+.ar{background:var(--s2);border:1px solid var(--bd);border-radius:8px;margin-bottom:.5rem;overflow:hidden;}
+.ah{padding:.75rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer;user-select:none;}
+.ah:hover{background:color-mix(in srgb,var(--ac) 5%,transparent);}
+.an{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ac);font-weight:500;min-width:90px;flex-shrink:0;}
+.at{font-size:.9rem;color:var(--tx);flex:1;}
+.av{color:var(--dim);font-size:.75rem;transition:transform .2s;flex-shrink:0;}
+.ar.open .av{transform:rotate(180deg);}
+.ab{display:none;padding:.8rem 1rem 1rem;border-top:1px solid var(--bd);font-size:.875rem;line-height:2;color:var(--sub);white-space:pre-wrap;word-break:keep-all;}
+.ar.open .ab{display:block;}
+.ad{background:color-mix(in srgb,var(--ac2) 5%,var(--s2));border:1px solid color-mix(in srgb,var(--ac2) 20%,var(--bd));border-radius:8px;margin-bottom:.5rem;overflow:hidden;}
+.ad .an{color:var(--ac2);}
+.ib{background:color-mix(in srgb,var(--te) 7%,transparent);border:1px solid color-mix(in srgb,var(--te) 25%,transparent);border-radius:8px;padding:.9rem 1rem;font-size:.84rem;color:var(--te);line-height:1.7;margin-bottom:1rem;}
+.wb{background:color-mix(in srgb,var(--ye) 7%,transparent);border:1px solid color-mix(in srgb,var(--ye) 25%,transparent);border-radius:8px;padding:.9rem 1rem;font-size:.84rem;color:var(--ye);line-height:1.7;margin-bottom:1rem;}
+.dtg{font-size:.75rem;color:var(--dim);cursor:pointer;text-decoration:underline;margin-top:.6rem;display:none;}
+.dbox{background:var(--s2);border:1px solid var(--bd2);border-radius:8px;padding:.8rem 1rem;font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;max-height:280px;overflow-y:auto;margin-top:.4rem;white-space:pre-wrap;word-break:break-all;display:none;}
+.dbox.on{display:block;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+</style>
 </head>
 <body>
-
 <header>
   <div class="logo">⚖ 기준일 법령 조문 조회<span>국가법령정보센터 연동</span></div>
-  <div class="tag">law.go.kr / Open API</div>
+  <div class="tag">law.go.kr / DRF API</div>
 </header>
-
 <div class="container">
 
-  <!-- API Key 안내 -->
   <div class="card">
-    <div class="card-title">API 인증키 설정</div>
-    <div class="api-notice">
-      이 서비스는 <strong>국가법령정보 공동활용 Open API</strong>를 사용합니다.
-      이용하려면 <a href="https://open.law.go.kr/LSO/main.do" target="_blank">open.law.go.kr</a>에서 회원가입 후 인증키(OC)를 발급받으세요.<br>
-      발급받은 키는 이 페이지에서만 사용되며 외부로 전송되지 않습니다.
+    <div class="ct">API 인증키 설정</div>
+    <div class="notice"><strong>국가법령정보 공동활용 Open API</strong> 인증키가 필요합니다.
+      <a href="https://open.law.go.kr/LSO/main.do" target="_blank">open.law.go.kr</a> 회원가입 후 마이페이지에서 무료 발급받으세요.
     </div>
-    <div style="margin-top:1rem;" class="field">
+    <div style="margin-top:1rem" class="fi">
       <label>인증키 (OC)</label>
-      <input type="text" id="apiKey" placeholder="발급받은 인증키를 입력하세요" autocomplete="off" />
+      <input type="text" id="apiKey" placeholder="발급받은 인증키 입력" autocomplete="off"/>
     </div>
   </div>
 
-  <!-- 검색 조건 -->
   <div class="card">
-    <div class="card-title">검색 조건 입력</div>
-    <div class="form-grid">
-      <div class="field">
+    <div class="ct">검색 조건</div>
+    <div class="fg">
+      <div class="fi">
         <label>기준일자</label>
-        <input type="date" id="baseDate" />
-        <span class="input-hint">해당 일자에 적용되는 법령을 조회합니다</span>
+        <input type="date" id="baseDate"/>
+        <span class="hint">해당 날짜에 시행 중이던 법령 버전을 조회합니다</span>
       </div>
-      <div class="field">
+      <div class="fi">
         <label>법령명</label>
-        <div class="search-wrapper">
-          <input type="text" id="lawName" placeholder="예: 소득세법, 민법, 근로기준법" autocomplete="off" />
-          <div class="dropdown" id="lawDropdown"></div>
+        <div class="sw">
+          <input type="text" id="lawName" placeholder="예: 소득세법, 민법, 근로기준법" autocomplete="off"/>
+          <div id="acSpinner" class="sp" style="display:none"></div>
+          <div class="dd" id="lawDD"></div>
         </div>
-        <span class="input-hint">입력 시 자동완성 목록이 표시됩니다</span>
+        <span class="hint">2글자 이상 입력 후 목록에서 선택 · ↑↓ Enter 키 지원</span>
       </div>
-      <div class="field full">
-        <label>특정 조문 번호 (선택)</label>
-        <input type="text" id="articleNo" placeholder="예: 제1조 / 제14조의2 / 비워두면 전체 조문 표시" autocomplete="off" />
-        <span class="input-hint">비워두면 전체 조문을 모두 표시합니다</span>
+      <div class="fi full">
+        <label>특정 조문 번호 (선택 — 비워두면 전체 조문)</label>
+        <input type="text" id="artNo" placeholder="예: 제1조  /  14  /  제14조의2" autocomplete="off"/>
       </div>
     </div>
-    <div class="btn-row">
-      <button class="btn-primary" id="searchBtn" onclick="startSearch()">
-        <span>🔍</span> 조문 조회
-      </button>
-      <button class="btn-secondary" onclick="resetAll()">초기화</button>
+    <div class="btnr">
+      <button class="bp" id="searchBtn" onclick="go()">🔍 조문 조회</button>
+      <button class="bs" onclick="reset()">초기화</button>
     </div>
   </div>
 
-  <!-- 진행 상태 -->
-  <div class="card" id="progressCard" style="display:none;">
-    <div class="status-bar active" id="statusBar">
-      <div class="spinner"></div>
-      <span id="statusMsg">조회 중...</span>
-    </div>
-    <div class="step-list" id="stepList" style="margin-top:0.8rem;"></div>
+  <div class="card" id="progCard" style="display:none">
+    <div class="sb"><div class="sp"></div><span id="statusMsg">조회 중...</span></div>
+    <div class="sl" id="stepList"></div>
+    <span class="dtg" id="dtg" onclick="toggleDbg()">▼ 원본 XML 확인 (디버그)</span>
+    <div class="dbox" id="dbox"></div>
   </div>
 
-  <!-- 에러 -->
-  <div class="error-box" id="errorBox"></div>
+  <div class="eb" id="errBox"></div>
 
-  <!-- 결과 -->
   <div class="card" id="result">
-    <div class="result-header">
-      <div>
-        <div class="result-title" id="resultTitle"></div>
-        <div class="result-meta" id="resultMeta"></div>
-      </div>
-      <a id="lawLink" class="law-link" target="_blank">🔗 국가법령정보센터에서 보기</a>
+    <div class="rh">
+      <div><div class="rt" id="rTitle"></div><div class="rm" id="rMeta"></div></div>
+      <a id="rLink" class="ll" target="_blank">🔗 법령정보센터</a>
     </div>
-    <div id="resultContent"></div>
+    <div id="rContent"></div>
   </div>
-
 </div>
 
 <script>
-// ─────────────────────────────────────────────
-// 설정
-// ─────────────────────────────────────────────
-const API_BASE = 'https://www.law.go.kr/DRF';
+// ══════════════════════════════════════════════════
+//  설정
+// ══════════════════════════════════════════════════
+const API = 'https://www.law.go.kr/DRF';
 
-// 여러 CORS 프록시를 순서대로 시도 (안정적인 순서)
+// CORS 프록시 (autocomplete: 1~2개만 빠르게 / 본검색: 전체)
 const PROXIES = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  url => `https://thingproxy.freeboard.io/fetch/${url}`,
-  url => `https://cors-anywhere-production-6db4.up.railway.app/${url}`,
+  {name:'corsproxy', build: u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,             timeout:5000},
+  {name:'allorigins',build: u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,    timeout:7000},
+  {name:'codetabs',  build: u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,timeout:8000},
+  {name:'thingproxy',build: u=>`https://thingproxy.freeboard.io/fetch/${u}`,                     timeout:10000},
 ];
 
-let selectedLaw = null; // { lsiSeq, lawName, siDat, promDt }
-let searchTimer = null;
+const ACcache = new Map();    // 자동완성 캐시 (쿼리 → 결과)
+let   acAbort = null;          // 자동완성 AbortController
+let   acTimer = null;
+let   selItem = null;
+let   hlIdx   = -1;            // 키보드 하이라이트 인덱스
+let   lastXml = '';
 
-// ─────────────────────────────────────────────
-// 초기화
-// ─────────────────────────────────────────────
-window.onload = () => {
-  // 오늘 날짜 기본값
-  const today = new Date();
-  document.getElementById('baseDate').value = today.toISOString().split('T')[0];
+// ══════════════════════════════════════════════════
+//  초기화
+// ══════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  document.getElementById('baseDate').value = new Date().toISOString().split('T')[0];
+  const k = localStorage.getItem('lk');
+  if (k) document.getElementById('apiKey').value = k;
 
-  // 저장된 API 키
-  const savedKey = localStorage.getItem('law_api_key');
-  if (savedKey) document.getElementById('apiKey').value = savedKey;
+  document.getElementById('apiKey').addEventListener('input',()=>
+    localStorage.setItem('lk', document.getElementById('apiKey').value.trim()));
 
-  // API 키 자동 저장
-  document.getElementById('apiKey').addEventListener('change', () => {
-    localStorage.setItem('law_api_key', document.getElementById('apiKey').value.trim());
+  const ln = document.getElementById('lawName');
+  ln.addEventListener('input',  onInput);
+  ln.addEventListener('keydown',onKey);
+  ln.addEventListener('focus',  ()=>{ if (ln.value.trim().length>=2) openDD(); });
+  ln.addEventListener('blur',   ()=> setTimeout(closeDD, 200));
+  document.addEventListener('click', e=>{
+    if (!e.target.closest('.sw')) closeDD();
   });
+});
 
-  // 법령명 자동완성
-  document.getElementById('lawName').addEventListener('input', onLawNameInput);
-  document.getElementById('lawName').addEventListener('blur', () => {
-    setTimeout(() => closeDropdown(), 200);
-  });
-};
+// ══════════════════════════════════════════════════
+//  자동완성 — 디바운스 700ms, 2자 이상, 캐싱, 단일 프록시
+// ══════════════════════════════════════════════════
+function onInput(){
+  selItem = null;
+  hlIdx = -1;
+  clearTimeout(acTimer);
+  if (acAbort) acAbort.abort();
 
-function getApiKey() {
-  return document.getElementById('apiKey').value.trim();
-}
-
-// ─────────────────────────────────────────────
-// XML 한글 태그 파싱 헬퍼 (querySelector 대신 사용)
-// ─────────────────────────────────────────────
-function tag(node, ...names) {
-  for (const name of names) {
-    const found = node.getElementsByTagName(name);
-    if (found.length > 0) return found[0];
-  }
-  return null;
-}
-function tags(node, ...names) {
-  for (const name of names) {
-    const found = node.getElementsByTagName(name);
-    if (found.length > 0) return Array.from(found);
-  }
-  return [];
-}
-function txt(node, ...names) {
-  const el = tag(node, ...names);
-  return el ? el.textContent.trim() : '';
-}
-
-// ─────────────────────────────────────────────
-// 법령명 자동완성
-// ─────────────────────────────────────────────
-async function onLawNameInput() {
   const q = document.getElementById('lawName').value.trim();
-  selectedLaw = null;
-  if (q.length < 1) { closeDropdown(); return; }
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => searchLawList(q), 400);
+
+  if (q.length < 2) {
+    closeDD();
+    hideSpinner();
+    return;
+  }
+
+  // 캐시 즉시 표시
+  if (ACcache.has(q)) {
+    renderDD(ACcache.get(q));
+    return;
+  }
+
+  showSpinner();
+  acTimer = setTimeout(()=> doAC(q), 700);
 }
 
-async function searchLawList(q) {
-  const oc = getApiKey();
-  if (!oc) return;
-  // search=1: 법령명 포함검색
-  const url = `${API_BASE}/lawSearch.do?OC=${oc}&target=law&type=XML&display=20&search=1&query=${encodeURIComponent(q)}`;
+function onKey(e){
+  const dd = document.getElementById('lawDD');
+  const items = dd.querySelectorAll('.di');
+  if (e.key === 'ArrowDown' && items.length) {
+    e.preventDefault();
+    hlIdx = Math.min(hlIdx+1, items.length-1);
+    updateHL(items);
+  } else if (e.key === 'ArrowUp' && items.length) {
+    e.preventDefault();
+    hlIdx = Math.max(hlIdx-1, 0);
+    updateHL(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (hlIdx >= 0 && items[hlIdx]) {
+      items[hlIdx].dispatchEvent(new MouseEvent('mousedown'));
+    } else {
+      closeDD();
+      go();
+    }
+  } else if (e.key === 'Escape') {
+    closeDD();
+  }
+}
+function updateHL(items){
+  items.forEach((it,i)=> it.classList.toggle('hl', i===hlIdx));
+  if (items[hlIdx]) items[hlIdx].scrollIntoView({block:'nearest'});
+}
+
+async function doAC(q){
+  const oc = document.getElementById('apiKey').value.trim();
+  if (!oc) { hideSpinner(); return; }
+
+  acAbort = new AbortController();
+  const url = `${API}/lawSearch.do?OC=${oc}&target=law&type=XML&display=20&search=2&query=${encodeURIComponent(q)}&lasYn=Y`;
+
   try {
-    const text = await fetchWithProxy(url);
-    const xml = parseXml(text);
-    // API는 <law> 태그 목록을 반환
-    const laws = xml.getElementsByTagName('law');
-    const dropdown = document.getElementById('lawDropdown');
-    dropdown.innerHTML = '';
-    if (laws.length === 0) { closeDropdown(); return; }
-    Array.from(laws).forEach(law => {
-      const lsiSeq  = txt(law, '법령일련번호');
-      const name    = txt(law, '법령명한글');
-      const siDat   = txt(law, '시행일자');
-      const promDt  = txt(law, '공포일자');
-      const promNo  = txt(law, '공포번호');
-      const lawKind = txt(law, '법령종류명');
-      if (!name) return;
-      const item = document.createElement('div');
-      item.className = 'dropdown-item';
-      item.innerHTML = `<span class="law-name">${name}</span><span class="law-meta">${lawKind ? lawKind+' · ' : ''}시행 ${formatDate(siDat)}</span>`;
-      item.addEventListener('mousedown', () => {
-        selectedLaw = { lsiSeq, lawName: name, siDat, promDt, promNo, lawKind };
-        document.getElementById('lawName').value = name;
-        closeDropdown();
-      });
-      dropdown.appendChild(item);
-    });
-    dropdown.classList.add('open');
+    // 자동완성은 빠른 프록시 1개만 시도 (3초)
+    const text = await fetchFast(url, acAbort.signal);
+    if (!text) { hideSpinner(); return; }
+
+    const xml  = parseXML(text);
+    const laws = Array.from(xml.querySelectorAll('law, 법령'));
+    const results = laws.map(metaFrom).filter(m=>m.name);
+
+    ACcache.set(q, results);
+    renderDD(results);
   } catch(e) {
-    console.error('자동완성 오류:', e);
-    closeDropdown();
+    if (e.name !== 'AbortError') {
+      const dd = document.getElementById('lawDD');
+      dd.innerHTML = '<div class="de">자동완성 일시 오류 · 직접 입력 후 조회 버튼을 눌러주세요</div>';
+      openDD();
+    }
+  } finally {
+    hideSpinner();
   }
 }
 
-function closeDropdown() {
-  document.getElementById('lawDropdown').classList.remove('open');
+function renderDD(results){
+  const dd = document.getElementById('lawDD');
+  dd.innerHTML = '';
+  if (results.length === 0) {
+    dd.innerHTML = '<div class="de">검색 결과 없음</div>';
+  } else {
+    results.forEach(m=>{
+      const d = document.createElement('div');
+      d.className = 'di';
+      d.innerHTML = `<span class="dn">${esc(m.name)}</span>
+        <span class="dm">${m.kind?m.kind+' · ':''}시행 ${fdate(m.siDat)}</span>`;
+      d.addEventListener('mousedown', e=>{
+        e.preventDefault();
+        selItem = m;
+        document.getElementById('lawName').value = m.name;
+        closeDD();
+      });
+      dd.appendChild(d);
+    });
+  }
+  openDD();
+  hlIdx = -1;
 }
 
-// ─────────────────────────────────────────────
-// 메인 검색 흐름
-// ─────────────────────────────────────────────
-async function startSearch() {
-  const oc = getApiKey();
-  if (!oc) { showError('API 인증키를 입력해주세요. open.law.go.kr에서 발급받으실 수 있습니다.'); return; }
-  const baseDate = document.getElementById('baseDate').value;
-  if (!baseDate) { showError('기준일자를 입력해주세요.'); return; }
-  const lawInput = document.getElementById('lawName').value.trim();
-  if (!lawInput) { showError('법령명을 입력해주세요.'); return; }
+// ══════════════════════════════════════════════════
+//  메인 검색
+// ══════════════════════════════════════════════════
+async function go(){
+  const oc = document.getElementById('apiKey').value.trim();
+  const dv = document.getElementById('baseDate').value;
+  const lv = document.getElementById('lawName').value.trim();
+  const af = document.getElementById('artNo').value.trim();
 
-  const baseDateStr = baseDate.replace(/-/g,'');
-  const articleFilter = document.getElementById('articleNo').value.trim();
+  if (!oc) return showErr('API 인증키를 입력해주세요.');
+  if (!dv) return showErr('기준일자를 입력해주세요.');
+  if (!lv) return showErr('법령명을 입력해주세요.');
 
-  localStorage.setItem('law_api_key', oc);
-  hideError();
-  hideResult();
-  showProgress();
+  const bd = dv.replace(/-/g,'');
+
+  clearErr(); hideRes(); showProg();
   document.getElementById('searchBtn').disabled = true;
+  lastXml = '';
 
   try {
-    // STEP 1: 기준일 이전 시행된 가장 최신 연혁 법령 탐색
-    addStep('step1', 'doing', `[1/4] 법령 검색: ${lawInput}`);
-    const law = await findLawByDate(oc, lawInput, baseDateStr);
-    if (!law) throw new Error(`'${lawInput}' 법령을 찾을 수 없습니다.\n법령명을 정확히 입력하거나 자동완성 목록에서 선택해주세요.`);
-    doneStep('step1', `[1/4] 법령 확인: ${law.lawName} (시행: ${formatDate(law.siDat)})`);
+    // ── STEP 1: 법령 버전 탐색 ─────────────────
+    addSt('s1','doing','[1/4] 기준일 기준 법령 버전 탐색...');
+    setSt('법령 버전 조회 중...');
+    const law = await findVersion(oc, lv, bd);
+    if (!law) throw new Error(`'${lv}' 법령을 찾을 수 없습니다.\n· 법령명을 정확히 입력하세요 (예: 소득세법)\n· 자동완성 목록에서 선택하면 가장 정확합니다`);
+    doneSt('s1', `[1/4] 확인: ${law.name}  (시행 ${fdate(law.siDat)})`);
 
-    // STEP 2: 법령 본문 XML 조회
-    addStep('step2', 'doing', `[2/4] 법령 본문 조회 중...`);
-    const lawData = await fetchLawContent(oc, law.lsiSeq);
-    doneStep('step2', `[2/4] 본문 로드 완료`);
+    // ── STEP 2: 본문 XML 조회 ────────────────
+    addSt('s2','doing','[2/4] 본문 XML 로드 중...');
+    setSt('본문 XML 다운로드 중...');
+    const raw = await fetchAll(`${API}/lawService.do?OC=${oc}&target=law&ID=${law.lsiSeq}&type=XML`);
+    lastXml = raw;
+    document.getElementById('dtg').style.display = 'inline-block';
+    doneSt('s2', `[2/4] 본문 로드 (${(raw.length/1024).toFixed(1)} KB)`);
 
-    // STEP 3: 부칙 분석
-    addStep('step3', 'doing', `[3/4] 부칙 및 경과규정 분석 중...`);
-    const addendaData = parseAddenda(lawData.xml, baseDateStr);
-    doneStep('step3', `[3/4] 부칙 ${addendaData.length}건 검토 완료`);
+    // ── STEP 3: 파싱 ─────────────────────────
+    addSt('s3','doing','[3/4] 조문·부칙 파싱 중...');
+    const doc = parseXML(raw);
+    const arts = parseArts(doc, af);
+    const adds = parseAdds(doc, bd);
+    doneSt('s3', `[3/4] 조문 ${arts.length}건 · 부칙 ${adds.length}건`);
 
-    // STEP 4: 조문 파싱
-    addStep('step4', 'doing', `[4/4] 조문 파싱 중...`);
-    const articles = parseArticles(lawData.xml, articleFilter);
-    doneStep('step4', `[4/4] 조문 ${articles.length}건 확인`);
-
-    hideProgress();
-    showResult(law, lawData, articles, addendaData, baseDateStr, articleFilter);
+    // ── STEP 4: 출력 ─────────────────────────
+    addSt('s4','doing','[4/4] 결과 출력 중...');
+    hideProg();
+    renderRes(law, arts, adds, bd, af, raw);
+    doneSt('s4','[4/4] 완료');
 
   } catch(e) {
-    hideProgress();
-    showError(e.message || '알 수 없는 오류가 발생했습니다.');
+    hideProg();
+    showErr(e.message || '오류 발생');
   }
   document.getElementById('searchBtn').disabled = false;
 }
 
-// ─────────────────────────────────────────────
-// API: 기준일 이전 최신 연혁 법령 탐색
-// ─────────────────────────────────────────────
-async function findLawByDate(oc, lawName, baseDateStr) {
-  // search=1: 포함검색, lasYn=N: 연혁 포함
-  const url = `${API_BASE}/lawSearch.do?OC=${oc}&target=law&type=XML&display=100&search=1&query=${encodeURIComponent(lawName)}&lasYn=N`;
-  const res = await fetchWithProxy(url);
-  const xml = parseXml(res);
+// ══════════════════════════════════════════════════
+//  법령 버전 탐색 (기준일 이하 최신)
+// ══════════════════════════════════════════════════
+async function findVersion(oc, name, bd){
+  // 자동완성에서 선택했으면 lsiSeq로 기본정보 이미 확보, 하지만 기준일 맞는 연혁 찾기 위해 전체 조회
+  const url = `${API}/lawSearch.do?OC=${oc}&target=law&type=XML&display=100&search=2&query=${encodeURIComponent(name)}&lasYn=N`;
+  const txt = await fetchAll(url);
+  const xml = parseXML(txt);
+  const all = Array.from(xml.querySelectorAll('law, 법령')).map(metaFrom).filter(m=>m.name);
+  if (!all.length) return null;
 
-  const lawEls = Array.from(xml.getElementsByTagName('law'));
-  if (lawEls.length === 0) return null;
-
-  // 법령명 정확 매칭 우선
-  let matched = lawEls.filter(l => txt(l,'법령명한글') === lawName);
-  if (matched.length === 0) matched = lawEls.filter(l => txt(l,'법령명한글').includes(lawName));
-  if (matched.length === 0) matched = lawEls;
-
-  // 시행일자 <= 기준일인 것 중 가장 최신
-  const valid = matched
-    .filter(l => {
-      const siDat = txt(l,'시행일자') || '99999999';
-      return siDat <= baseDateStr;
-    })
-    .sort((a,b) => {
-      const da = txt(a,'시행일자');
-      const db = txt(b,'시행일자');
-      return db.localeCompare(da);
-    });
-
-  if (valid.length === 0) {
-    // 기준일 이전 시행 법령이 없으면 가장 오래된 것
-    matched.sort((a,b) => txt(a,'시행일자').localeCompare(txt(b,'시행일자')));
-    return extractLawMeta(matched[0]);
+  // 1) 정확 이름 매칭 풀
+  let pool = all.filter(m => m.name === name);
+  if (!pool.length) {
+    // 2) 공백 제거 비교
+    const nn = name.replace(/\s/g,'');
+    pool = all.filter(m => m.name.replace(/\s/g,'') === nn);
   }
-  return extractLawMeta(valid[0]);
+  if (!pool.length) pool = all;  // 3) 포함 전체
+
+  // 시행일 <= 기준일 중 최신
+  const valid = pool.filter(m => (m.siDat || '99999999') <= bd)
+    .sort((a,b) => (b.siDat||'').localeCompare(a.siDat||''));
+
+  return valid[0] || pool.sort((a,b)=>(a.siDat||'').localeCompare(b.siDat||''))[0];
 }
 
-function extractLawMeta(law) {
+function metaFrom(el){
   return {
-    lsiSeq:   txt(law,'법령일련번호'),
-    lawName:  txt(law,'법령명한글'),
-    siDat:    txt(law,'시행일자'),
-    promDt:   txt(law,'공포일자'),
-    promNo:   txt(law,'공포번호'),
-    lawKind:  txt(law,'법령종류명'),
-    ministry: txt(law,'소관부처명'),
+    lsiSeq:  g(el,'법령일련번호') || g(el,'법령ID'),
+    name:    g(el,'법령명한글') || g(el,'법령명_한글') || g(el,'법령명'),
+    siDat:   g(el,'시행일자'),
+    promDt:  g(el,'공포일자'),
+    promNo:  g(el,'공포번호'),
+    kind:    g(el,'법령종류명') || g(el,'법종구분'),
+    dept:    g(el,'소관부처명'),
   };
 }
 
-// ─────────────────────────────────────────────
-// API: 법령 본문 조회
-// ─────────────────────────────────────────────
-async function fetchLawContent(oc, lsiSeq) {
-  const url = `${API_BASE}/lawService.do?OC=${oc}&target=law&ID=${lsiSeq}&type=XML`;
-  const text = await fetchWithProxy(url);
-  const xml = parseXml(text);
-  return { xml, raw: text };
-}
+// ══════════════════════════════════════════════════
+//  조문 파싱 — law.go.kr DRF XML 실제 구조 대응
+//
+//  실제 DRF XML 구조:
+//  <조문>
+//    <조문단위>
+//      <조문키>0001000</조문키>
+//      <조문번호>1</조문번호>            ← 숫자만 "1" "14"
+//      <조문가지번호>0</조문가지번호>      ← 의2, 의3 구분
+//      <조문제목>목적</조문제목>
+//      <조문여부>조문</조문여부>         ← "조문" or "전문"
+//      <조문시행일자>20210101</조문시행일자>
+//      <조문내용>제1조(목적) 이 법은 ...</조문내용>  ← 전체 텍스트 포함
+//      <항>
+//        <항번호>①</항번호>
+//        <항내용>제1항 내용...</항내용>
+//      </항>
+//    </조문단위>
+//  </조문>
+// ══════════════════════════════════════════════════
+function parseArts(doc, filter){
+  // 조문단위만 정확히 선택
+  const units = Array.from(doc.getElementsByTagName('조문단위'));
+  const result = [];
 
-// ─────────────────────────────────────────────
-// 조문 파싱 (한글 XML 태그 전용 헬퍼 사용)
-// ─────────────────────────────────────────────
-function parseArticles(xml, filterStr) {
-  const articles = [];
+  units.forEach(u => {
+    // "조문여부"가 "전문"이면 건너뜀 (목차/전문 등)
+    const kind = g(u,'조문여부');
+    if (kind === '전문') return;
 
-  // 조문단위 태그 탐색
-  const joList = Array.from(xml.getElementsByTagName('조문단위'));
+    const num  = g(u,'조문번호');
+    const sub  = g(u,'조문가지번호');   // "2" → 의2
+    const title = g(u,'조문제목');
 
-  joList.forEach(jo => {
-    const num   = txt(jo, '조문번호');
-    const title = txt(jo, '조문제목');
-    const body  = extractArticleText(jo);
-    if (!num && !body) return;
+    if (!num) return;
 
-    // 필터 적용
-    if (filterStr) {
-      const f = filterStr.replace(/\s/g,'').replace(/제/g,'').replace(/조.*/,'');
-      const n = num.replace(/\s/g,'').replace(/제/g,'').replace(/조.*/,'');
-      if (!n.startsWith(f) && !num.includes(filterStr)) return;
+    // 표시용 번호: "제1조" or "제14조의2"
+    const display = sub && sub !== '0' ? `제${num}조의${sub}` : `제${num}조`;
+
+    // 필터
+    if (filter) {
+      const fClean = filter.replace(/[제조\s]/g,'').replace(/의/g,'의');
+      const candidates = [num, num+'의'+sub, display.replace(/[제조\s]/g,'')];
+      if (!candidates.some(c => c === fClean) && !display.includes(filter.replace(/\s/g,''))) return;
     }
 
-    articles.push({ num, title, body });
+    // 본문: 조문내용 우선, 없으면 항/호/목 조합
+    let body = g(u,'조문내용');
+    const hangs = Array.from(u.getElementsByTagName('항'));
+    if (hangs.length > 0) {
+      const lines = body ? [body] : [];
+      hangs.forEach(h => {
+        const hn = g(h,'항번호');
+        const ht = g(h,'항내용');
+        if (ht) lines.push((hn?hn+' ':'') + ht);
+        Array.from(h.getElementsByTagName('호')).forEach(ho => {
+          const hon = g(ho,'호번호');
+          const hot = g(ho,'호내용');
+          if (hot) lines.push('  ' + (hon?hon+' ':'') + hot);
+          Array.from(ho.getElementsByTagName('목')).forEach(m => {
+            const mn = g(m,'목번호');
+            const mt = g(m,'목내용');
+            if (mt) lines.push('    ' + (mn?mn+' ':'') + mt);
+          });
+        });
+      });
+      body = lines.join('\n');
+    }
+
+    result.push({ num: display, title, body: body || '(내용 없음)' });
   });
 
-  return articles;
+  return result;
 }
 
-function extractArticleText(jo) {
-  const lines = [];
+// ══════════════════════════════════════════════════
+//  부칙 파싱
+// ══════════════════════════════════════════════════
+function parseAdds(doc, bd){
+  const units = Array.from(doc.getElementsByTagName('부칙단위'));
+  const result = [];
 
-  // 조문내용 (단독 조문)
-  const directContent = txt(jo, '조문내용');
-  if (directContent) lines.push(directContent);
+  units.forEach(bu => {
+    const promDt = g(bu,'부칙공포일자') || g(bu,'공포일자');
+    const promNo = g(bu,'부칙공포번호') || g(bu,'공포번호');
+    // 부칙의 시행일은 부칙 내용 안에 "이 법은 ~부터 시행한다" 형태로 들어있음
+    // 공포일자로 기준일 비교
+    if (promDt && promDt > bd) return;
 
-  // 항 처리
-  const hangList = Array.from(jo.getElementsByTagName('항'));
-  hangList.forEach(hang => {
-    // 하위 항 제외 (손자 이하)
-    if (hang.parentElement !== jo) return;
-
-    const hangNo      = txt(hang, '항번호');
-    const hangContent = txt(hang, '항내용');
-    const prefix = hangNo ? `${hangNo} ` : '';
-    if (hangContent) lines.push(`${prefix}${hangContent}`);
-
-    // 호 처리
-    const hoList = Array.from(hang.getElementsByTagName('호'));
-    hoList.forEach(ho => {
-      if (ho.parentElement !== hang) return;
-      const hoNo      = txt(ho, '호번호');
-      const hoContent = txt(ho, '호내용');
-      if (hoContent) lines.push(`  ${hoNo ? hoNo+' ' : ''}${hoContent}`);
-
-      // 목 처리
-      const mokList = Array.from(ho.getElementsByTagName('목'));
-      mokList.forEach(mok => {
-        if (mok.parentElement !== ho) return;
-        const mokNo      = txt(mok, '목번호');
-        const mokContent = txt(mok, '목내용');
-        if (mokContent) lines.push(`    ${mokNo ? mokNo+' ' : ''}${mokContent}`);
-      });
+    const content = g(bu,'부칙내용') || bu.textContent.replace(/\s{2,}/g,' ').trim();
+    result.push({
+      num:    promNo ? `부칙 제${promNo}호` : '부칙',
+      title:  promDt ? `공포 ${fdate(promDt)}` : '',
+      body:   content.slice(0, 4000),
+      promDt,
     });
   });
 
-  return lines.join('\n');
+  // 공포일 내림차순 정렬
+  result.sort((a,b) => (b.promDt||'').localeCompare(a.promDt||''));
+  return result;
 }
 
-// ─────────────────────────────────────────────
-// 부칙 파싱
-// ─────────────────────────────────────────────
-function parseAddenda(xml, baseDateStr) {
-  const addenda = [];
+// ══════════════════════════════════════════════════
+//  결과 렌더링
+// ══════════════════════════════════════════════════
+function renderRes(law, arts, adds, bd, filter, raw){
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('rTitle').textContent = law.name;
+  document.getElementById('rMeta').innerHTML = `
+    <span class="bx bb">기준일 ${fdate(bd)}</span>
+    <span class="bx bg">시행 ${fdate(law.siDat)}</span>
+    ${law.kind  ? `<span class="bx bt">${law.kind}</span>` : ''}
+    ${law.dept  ? `<span class="bx bpp">${law.dept}</span>` : ''}
+    ${law.promDt? `<span class="bx by">공포 ${fdate(law.promDt)}</span>` : ''}`;
+  document.getElementById('rLink').href = `https://www.law.go.kr/lsInfoP.do?lsiSeq=${law.lsiSeq}&efYd=${bd}`;
 
-  const buList = Array.from(xml.getElementsByTagName('부칙단위'));
-  // 부칙단위가 없으면 부칙 시도
-  const list = buList.length > 0 ? buList : Array.from(xml.getElementsByTagName('부칙'));
+  const w = document.getElementById('rContent');
+  w.innerHTML = '';
 
-  list.forEach(bu => {
-    const num    = txt(bu,'부칙번호');
-    const title  = txt(bu,'부칙제목');
-    const siDat  = txt(bu,'시행일자');
-    const promDt = txt(bu,'공포일자');
-    // 전체 텍스트 (내용 태그가 다양할 수 있어 전체 사용)
-    const content = bu.textContent.trim();
-
-    const siD = siDat || promDt || '00000000';
-    if (siD > baseDateStr) return;
-
-    addenda.push({ num, title, siDat, promDt, content: content.substring(0, 3000) });
-  });
-
-  return addenda;
-}
-
-// ─────────────────────────────────────────────
-// 유틸
-// ─────────────────────────────────────────────
-async function fetchWithProxy(url) {
-  const proxyNames = ['corsproxy.io', 'allorigins.win', 'codetabs.com', 'thingproxy', 'railway'];
-  let lastError = '';
-
-  for (let i = 0; i < PROXIES.length; i++) {
-    const proxyUrl = PROXIES[i](url);
-    const statusMsg = document.getElementById('statusMsg');
-    if (statusMsg) statusMsg.textContent = `연결 중... (${proxyNames[i] || i+1}번 경로, ${i+1}/${PROXIES.length})`;
-
-    try {
-      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-      if (!r.ok) { lastError = `HTTP ${r.status}`; continue; }
-      const text = await r.text();
-      if (text.length < 30 || text.trim().startsWith('<!DOCTYPE')) {
-        lastError = '유효하지 않은 응답'; continue;
-      }
-      // 성공한 프록시 우선 순위로
-      const winner = PROXIES.splice(i, 1)[0];
-      PROXIES.unshift(winner);
-      return text;
-    } catch(e) {
-      lastError = e.name === 'TimeoutError' ? '응답 시간 초과' : e.message;
-      continue;
+  if (arts.length === 0) {
+    const b = document.createElement('div');
+    b.className = filter ? 'ib' : 'wb';
+    b.innerHTML = filter
+      ? `<strong>${esc(filter)}</strong>에 해당하는 조문이 없습니다.<br>
+         예시 형식: <code>제1조</code> / <code>1</code> / <code>제14조의2</code> / <code>14의2</code>`
+      : `⚠ 조문을 자동 파싱하지 못했습니다.<br>
+         아래 "원본 XML 확인"을 눌러 데이터 구조를 확인하거나,
+         <a class="ll" href="https://www.law.go.kr/lsInfoP.do?lsiSeq=${law.lsiSeq}&efYd=${bd}" target="_blank">🔗 국가법령정보센터</a>에서 직접 확인하세요.`;
+    w.appendChild(b);
+    if (!filter) {
+      document.getElementById('dtg').style.display = 'inline-block';
+      document.getElementById('progCard').style.display = 'block';
+      showDbg();
     }
+  } else {
+    const ib = document.createElement('div');
+    ib.className = 'ib';
+    ib.innerHTML = `<strong>${fdate(bd)}</strong> 기준 <strong>${esc(law.name)}</strong>
+      ${filter ? `<strong>${esc(filter)}</strong> 조문` : `전체 조문 <strong>${arts.length}건</strong>`}
+      ${adds.length ? ` · 부칙 <strong>${adds.length}건</strong>` : ''}`;
+    w.appendChild(ib);
   }
 
+  if (arts.length) {
+    const s = document.createElement('div');
+    s.className = 'as';
+    s.innerHTML = `<div class="sl2">📄 본문 조문 ${arts.length}건</div>`;
+    arts.forEach(a => s.appendChild(makeCard(a,false)));
+    w.appendChild(s);
+  }
+
+  if (adds.length) {
+    const s = document.createElement('div');
+    s.className = 'as';
+    s.innerHTML = `<div class="sl2">📎 부칙 (기준일 이전 공포 ${adds.length}건)</div>`;
+    adds.forEach(a => s.appendChild(makeCard(a,true)));
+    w.appendChild(s);
+  }
+}
+
+function makeCard(a, isAdd){
+  const d = document.createElement('div');
+  d.className = isAdd ? 'ar ad' : 'ar';
+  d.innerHTML = `<div class="ah" onclick="this.parentElement.classList.toggle('open')">
+    <span class="an">${esc(a.num)}</span>
+    <span class="at">${esc(a.title||'')}</span>
+    <span class="av">▾</span>
+  </div>
+  <div class="ab">${esc(a.body)||'(내용 없음)'}</div>`;
+  return d;
+}
+
+// ══════════════════════════════════════════════════
+//  네트워크 — 2개 전략
+// ══════════════════════════════════════════════════
+
+// 빠른 fetch — 자동완성용, 첫번째 프록시만 짧은 타임아웃
+async function fetchFast(url, signal){
+  const p = PROXIES[0];
+  try {
+    const r = await fetch(p.build(url), {
+      signal,
+      // 외부 signal과 타임아웃 signal을 결합
+    });
+    if (!r.ok) return null;
+    const t = await r.text();
+    if (t.length < 50 || t.trimStart().startsWith('<!DOCTYPE html')) return null;
+    return t;
+  } catch(e) {
+    if (e.name === 'AbortError') throw e;
+    return null;
+  }
+}
+
+// 전체 fetch — 본 검색용, 모든 프록시 순차 시도
+async function fetchAll(url){
+  let lastErr = '';
+  for (let i = 0; i < PROXIES.length; i++) {
+    const p = PROXIES[i];
+    setSt(`서버 연결 중 (${p.name}, ${i+1}/${PROXIES.length})...`);
+    try {
+      const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.timeout) });
+      if (!r.ok) { lastErr = `HTTP ${r.status}`; continue; }
+      const t = await r.text();
+      if (t.length < 50 || t.trimStart().startsWith('<!DOCTYPE html')) { lastErr='무효 응답'; continue; }
+      // 성공한 프록시 맨 앞으로
+      PROXIES.unshift(PROXIES.splice(i,1)[0]);
+      return t;
+    } catch(e) {
+      lastErr = e.name === 'TimeoutError' ? '응답 시간 초과' : e.message;
+    }
+  }
   throw new Error(
-    `모든 연결 경로 실패 (${lastError})\n\n` +
-    `① 잠시 후 다시 시도해주세요\n` +
-    `② VPN·보안 프로그램을 끄고 시도해주세요\n` +
-    `③ 인증키(OC)가 올바른지 확인해주세요`
+    `CORS 프록시 연결 실패 (${lastErr})\n\n` +
+    `해결 방법:\n` +
+    `① 30초~1분 후 다시 시도\n` +
+    `② VPN · 방화벽 끄고 시도\n` +
+    `③ 인증키(OC)가 맞는지 확인\n` +
+    `④ law.go.kr에서 직접 확인`
   );
 }
 
-function parseXml(text) {
-  const parser = new DOMParser();
-  const xml = parser.parseFromString(text, 'text/xml');
-  const err = xml.getElementsByTagName('parsererror');
-  if (err.length > 0) throw new Error('XML 파싱 오류: 법령 데이터를 읽을 수 없습니다.');
-  return xml;
+// ══════════════════════════════════════════════════
+//  유틸
+// ══════════════════════════════════════════════════
+function parseXML(t){
+  const d = new DOMParser().parseFromString(t, 'text/xml');
+  if (d.querySelector('parsererror')) throw new Error('XML 파싱 실패 — 원본 XML 확인 필요');
+  return d;
 }
-
-function formatDate(s) {
-  if (!s || s.length !== 8) return s || '';
-  return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
+function g(el, tag){
+  // getElementsByTagName으로 다중 매칭 지원 (첫번째만 반환)
+  const nodes = el.getElementsByTagName(tag);
+  return nodes.length > 0 ? (nodes[0].textContent||'').trim() : '';
 }
+function fdate(s){ return (!s || s.length !== 8) ? (s||'') : `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ─────────────────────────────────────────────
-// UI
-// ─────────────────────────────────────────────
-function showProgress() {
-  document.getElementById('progressCard').style.display = 'block';
-  document.getElementById('statusBar').classList.add('active');
-  document.getElementById('stepList').innerHTML = '';
+function openDD(){ document.getElementById('lawDD').classList.add('open'); }
+function closeDD(){ document.getElementById('lawDD').classList.remove('open'); hlIdx=-1; }
+function showSpinner(){ document.getElementById('acSpinner').style.display = 'block'; }
+function hideSpinner(){ document.getElementById('acSpinner').style.display = 'none'; }
+
+function showProg(){ document.getElementById('progCard').style.display='block'; document.getElementById('stepList').innerHTML=''; document.getElementById('dbox').classList.remove('on'); document.getElementById('dtg').style.display='none'; }
+function hideProg(){ document.getElementById('progCard').style.display='none'; }
+function setSt(m){ document.getElementById('statusMsg').textContent = m; }
+function addSt(id, state, msg){
+  const icon = {doing:'◉',done:'✓',fail:'✗'}[state] || '·';
+  const d = document.createElement('div');
+  d.className = `st ${state}`;
+  d.id = id;
+  d.innerHTML = `<span class="si">${icon}</span><span>${msg}</span>`;
+  document.getElementById('stepList').appendChild(d);
 }
-function hideProgress() {
-  document.getElementById('progressCard').style.display = 'none';
+function doneSt(id, msg){
+  const e = document.getElementById(id);
+  if (e) { e.className='st done'; e.innerHTML=`<span class="si">✓</span><span>${msg}</span>`; }
 }
-function addStep(id, state, msg) {
-  const list = document.getElementById('stepList');
-  const div = document.createElement('div');
-  div.className = `step ${state}`;
-  div.id = id;
-  const icon = state === 'doing' ? '◉' : state === 'done' ? '✓' : '✗';
-  div.innerHTML = `<span class="step-icon">${icon}</span>${msg}`;
-  list.appendChild(div);
-}
-function doneStep(id, msg) {
-  const el = document.getElementById(id);
-  if (el) { el.className='step done'; el.innerHTML=`<span class="step-icon">✓</span>${msg}`; }
-}
-function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.style.whiteSpace = 'pre-line';
-  box.textContent = '⚠ ' + msg;
-  box.classList.add('active');
-}
-function hideError() { document.getElementById('errorBox').classList.remove('active'); }
-function hideResult() { document.getElementById('result').style.display = 'none'; }
-function resetAll() {
-  hideError(); hideResult(); hideProgress();
-  document.getElementById('lawName').value = '';
-  document.getElementById('articleNo').value = '';
-  selectedLaw = null;
-}
-
-function showResult(law, lawData, articles, addenda, baseDateStr, filterStr) {
-  const resultEl = document.getElementById('result');
-  resultEl.style.display = 'block';
-  document.getElementById('resultTitle').textContent = law.lawName;
-
-  const meta = document.getElementById('resultMeta');
-  meta.innerHTML = `
-    <span class="badge badge-blue">기준일: ${formatDate(baseDateStr)}</span>
-    <span class="badge badge-green">시행: ${formatDate(law.siDat)}</span>
-    ${law.lawKind ? `<span class="badge badge-teal">${law.lawKind}</span>` : ''}
-    ${law.ministry ? `<span class="badge badge-peach">${law.ministry}</span>` : ''}
-    ${law.promDt ? `<span class="badge badge-yellow">공포: ${formatDate(law.promDt)}</span>` : ''}
-  `;
-
-  const link = document.getElementById('lawLink');
-  link.href = `https://www.law.go.kr/lsInfoP.do?lsiSeq=${law.lsiSeq}&efYd=${baseDateStr}`;
-
-  const content = document.getElementById('resultContent');
-  content.innerHTML = '';
-
-  // 안내
-  const infoBox = document.createElement('div');
-  infoBox.className = 'info-box';
-  infoBox.style.marginBottom = '1.2rem';
-  infoBox.innerHTML = `
-    <strong>${formatDate(baseDateStr)}</strong> 기준 시행 중인 <strong>${law.lawName}</strong>의
-    ${filterStr ? `<strong>${filterStr}</strong> 조문` : '전체 조문'}입니다.
-    ${addenda.length > 0 ? `부칙 <strong>${addenda.length}건</strong>이 기준일 이전 시행되어 함께 표시됩니다.` : ''}
-  `;
-  content.appendChild(infoBox);
-
-  // 본문 조문
-  if (articles.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'article-section';
-    sec.innerHTML = `<div class="section-label">📄 본문 조문 (${articles.length}건)</div>`;
-    articles.forEach(art => {
-      const el = document.createElement('div');
-      el.className = 'article';
-      el.innerHTML = `
-        <div class="article-header" onclick="toggleArticle(this)">
-          <span class="article-num">${art.num || '조문'}</span>
-          <span class="article-title-text">${art.title || ''}</span>
-          <span class="article-chevron">▾</span>
-        </div>
-        <div class="article-body">${escapeHtml(art.body) || '(내용 없음)'}</div>
-      `;
-      sec.appendChild(el);
-    });
-    content.appendChild(sec);
-  } else {
-    const noResult = document.createElement('div');
-    noResult.className = 'info-box';
-    noResult.style.marginBottom = '1rem';
-    noResult.innerHTML = filterStr
-      ? `<strong>${filterStr}</strong>에 해당하는 조문을 찾을 수 없습니다. 조문번호를 확인하거나 비워두세요.`
-      : `조문을 불러오지 못했습니다. <a class="law-link" href="${link.href}" target="_blank">국가법령정보센터에서 직접 확인</a>하세요.`;
-    content.appendChild(noResult);
-  }
-
-  // 부칙
-  if (addenda.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'article-section';
-    sec.innerHTML = `<div class="section-label">📎 부칙 (기준일 이전 시행 ${addenda.length}건)</div>`;
-    addenda.forEach((add, i) => {
-      const el = document.createElement('div');
-      el.className = 'article addendum';
-      const dateInfo = add.siDat ? `시행: ${formatDate(add.siDat)}` : (add.promDt ? `공포: ${formatDate(add.promDt)}` : '');
-      el.innerHTML = `
-        <div class="article-header" onclick="toggleArticle(this)">
-          <span class="article-num">${add.num || '부칙'}</span>
-          <span class="article-title-text">${add.title || '부칙 '+(i+1)}${dateInfo ? ' · '+dateInfo : ''}</span>
-          <span class="article-chevron">▾</span>
-        </div>
-        <div class="article-body">${escapeHtml(add.content) || '(내용 없음)'}</div>
-      `;
-      sec.appendChild(el);
-    });
-    content.appendChild(sec);
-  }
-}
-
-function toggleArticle(header) {
-  header.parentElement.classList.toggle('open');
-}
-
-function escapeHtml(s) {
-  if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function showErr(m){ const b=document.getElementById('errBox'); b.textContent='⚠ '+m; b.classList.add('on'); }
+function clearErr(){ document.getElementById('errBox').classList.remove('on'); }
+function hideRes(){ document.getElementById('result').style.display='none'; }
+function showDbg(){ const b=document.getElementById('dbox'); b.textContent=lastXml.slice(0,6000)||'(없음)'; b.classList.add('on'); }
+function toggleDbg(){ const b=document.getElementById('dbox'); b.classList.contains('on')?b.classList.remove('on'):showDbg(); }
+function reset(){
+  clearErr(); hideRes(); hideProg();
+  document.getElementById('lawName').value='';
+  document.getElementById('artNo').value='';
+  selItem=null; lastXml=''; ACcache.clear();
 }
 </script>
 </body>
