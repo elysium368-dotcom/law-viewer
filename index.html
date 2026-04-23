@@ -493,8 +493,16 @@
 // ─────────────────────────────────────────────
 // 설정
 // ─────────────────────────────────────────────
-const PROXY = 'https://corsproxy.io/?url=';
 const API_BASE = 'https://www.law.go.kr/DRF';
+
+// 여러 CORS 프록시를 순서대로 시도 (안정적인 순서)
+const PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+  url => `https://cors-anywhere-production-6db4.up.railway.app/${url}`,
+];
 
 let selectedLaw = null; // { lsiSeq, lawName, siDat, promDt }
 let searchTimer = null;
@@ -545,8 +553,7 @@ async function searchLawList(q) {
   // 법령 목록 검색 (시행일 기준)
   const url = `${API_BASE}/lawSearch.do?OC=${oc}&target=law&type=XML&display=20&search=2&query=${encodeURIComponent(q)}`;
   try {
-    const res = await fetch(PROXY + encodeURIComponent(url));
-    const text = await res.text();
+    const text = await fetchWithProxy(url);
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, 'text/xml');
     const laws = xml.querySelectorAll('law');
@@ -787,14 +794,38 @@ function parseAddenda(xml, baseDateStr) {
 // 유틸
 // ─────────────────────────────────────────────
 async function fetchWithProxy(url) {
-  // 직접 시도 → CORS 실패시 프록시
-  try {
-    const r = await fetch(PROXY + encodeURIComponent(url));
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return await r.text();
-  } catch(e) {
-    throw new Error(`API 호출 실패: ${e.message}. CORS 프록시(corsproxy.io)가 필요합니다.`);
+  const proxyNames = ['corsproxy.io', 'allorigins.win', 'codetabs.com', 'thingproxy', 'railway'];
+  let lastError = '';
+
+  for (let i = 0; i < PROXIES.length; i++) {
+    const proxyUrl = PROXIES[i](url);
+    const statusMsg = document.getElementById('statusMsg');
+    if (statusMsg) statusMsg.textContent = `프록시 연결 시도 중... (${proxyNames[i] || i+1}번, ${i+1}/${PROXIES.length})`;
+
+    try {
+      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) { lastError = `HTTP ${r.status}`; continue; }
+      const text = await r.text();
+      if (text.length < 30 || text.trim().startsWith('<!DOCTYPE')) {
+        lastError = '유효하지 않은 응답'; continue;
+      }
+      // 성공한 프록시를 맨 앞으로 이동 (다음 호출 우선 사용)
+      const winner = PROXIES.splice(i, 1)[0];
+      PROXIES.unshift(winner);
+      return text;
+    } catch(e) {
+      lastError = e.name === 'TimeoutError' ? '응답 시간 초과' : e.message;
+      continue;
+    }
   }
+
+  throw new Error(
+    `모든 CORS 프록시 연결에 실패했습니다.\n마지막 오류: ${lastError}\n\n` +
+    `해결 방법:\n` +
+    `① 잠시 후(30초~1분) 다시 시도해주세요\n` +
+    `② VPN·보안 프로그램을 끄고 시도해주세요\n` +
+    `③ 인증키(OC)가 올바른지 확인해주세요`
+  );
 }
 
 function parseXml(text) {
