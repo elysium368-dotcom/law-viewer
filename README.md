@@ -2,7 +2,7 @@
 
 **국가법령정보센터 Open API**를 연동하여, 특정 기준일자에 적용되는 법령 조문과 부칙을 조회하는 정적 웹사이트입니다.
 
-👉 **[데모 페이지 바로가기](https://your-username.github.io/law-viewer/)**
+👉 **[데모 페이지 바로가기](https://elysium368-dotcom.github.io/law-viewer/)**
 
 ---
 
